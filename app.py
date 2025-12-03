@@ -68,7 +68,6 @@ class User(UserMixin, db.Model):
         self.blocked_reason = reason
 
     def block_permanently(self, reason=""):
-        # Используем максимальную дату с временной зоной
         self.blocked_until = datetime.max.replace(tzinfo=timezone.utc)
         self.blocked_reason = reason
 
@@ -100,7 +99,6 @@ class Payment(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# === HELPERS ===
 def anonymize_text(text: str) -> str:
     return hashlib.sha256(text.encode('utf-8')).hexdigest()
 
@@ -168,6 +166,13 @@ def steam_auth():
         return redirect(url_for('index'))
     flash("Ошибка авторизации", "error")
     return redirect(url_for('login'))
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash("Вы вышли из аккаунта", "success")
+    return redirect(url_for('index'))
 
 @app.route('/analyze', methods=['POST'])
 @login_required
@@ -320,7 +325,6 @@ def admin_payments():
     payments = query.order_by(Payment.created_at.desc()).paginate(page=page, per_page=20)
     return render_template('admin/payments.html', payments=payments, status=status)
 
-# === DATABASE INIT ===
-# Инициализация БД при старте приложения (совместимо с Flask 3.x)
+# === DB INIT ===
 with app.app_context():
     db.create_all()
