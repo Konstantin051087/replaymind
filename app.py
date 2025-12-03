@@ -3,11 +3,10 @@ import json
 import hashlib
 import base64
 import requests
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, current_app
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
-from werkzeug.security import generate_password_hash
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,14 +34,14 @@ class User(UserMixin, db.Model):
     is_premium = db.Column(db.Boolean, default=False)
     premium_until = db.Column(db.DateTime, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     blocked_until = db.Column(db.DateTime, nullable=True)
     blocked_reason = db.Column(db.String(255))
     free_requests_used = db.Column(db.Integer, default=0)
-    last_reset_week = db.Column(db.Date, default=datetime.utcnow().date())
+    last_reset_week = db.Column(db.Date, default=lambda: datetime.now(timezone.utc).date())
 
     def reset_if_needed(self):
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
         week_start = today - timedelta(days=today.weekday())
         if self.last_reset_week != week_start:
             self.free_requests_used = 0
@@ -51,7 +50,7 @@ class User(UserMixin, db.Model):
 
     @property
     def weekly_quota(self):
-        if self.is_premium and (self.premium_until is None or self.premium_until > datetime.utcnow()):
+        if self.is_premium and (self.premium_until is None or self.premium_until > datetime.now(timezone.utc)):
             return float('inf')
         self.reset_if_needed()
         return max(0, 5 - self.free_requests_used)
@@ -60,16 +59,17 @@ class User(UserMixin, db.Model):
     def is_blocked(self):
         if self.blocked_until is None:
             return False
-        if self.blocked_until == datetime.max:
+        if self.blocked_until == datetime.max.replace(tzinfo=timezone.utc):
             return True
-        return datetime.utcnow() < self.blocked_until
+        return datetime.now(timezone.utc) < self.blocked_until
 
     def block_temporarily(self, days=7, reason=""):
-        self.blocked_until = datetime.utcnow() + timedelta(days=days)
+        self.blocked_until = datetime.now(timezone.utc) + timedelta(days=days)
         self.blocked_reason = reason
 
     def block_permanently(self, reason=""):
-        self.blocked_until = datetime.max
+        # Используем максимальную дату с временной зоной
+        self.blocked_until = datetime.max.replace(tzinfo=timezone.utc)
         self.blocked_reason = reason
 
     def unblock(self):
@@ -82,7 +82,7 @@ class AIRequest(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     game = db.Column(db.String(100), nullable=False)
     description_hash = db.Column(db.String(64), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     is_premium = db.Column(db.Boolean, default=False)
 
 class Payment(db.Model):
@@ -94,7 +94,7 @@ class Payment(db.Model):
     currency = db.Column(db.String(3), default='RUB')
     status = db.Column(db.String(20), default='pending')
     description = db.Column(db.String(255))
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -205,7 +205,7 @@ def analyze():
             current_user.free_requests_used += 1
         db.session.commit()
         return jsonify(result)
-    except:
+    except Exception as e:
         return jsonify({"error": "Ошибка парсинга", "raw": content}), 500
 
 @app.route('/premium')
@@ -257,7 +257,7 @@ def yookassa_webhook():
             payment.status = 'succeeded'
             user = payment.user
             user.is_premium = True
-            user.premium_until = datetime.utcnow() + timedelta(days=30)
+            user.premium_until = datetime.now(timezone.utc) + timedelta(days=30)
             db.session.commit()
     return '', 200
 
@@ -270,7 +270,7 @@ def admin_dashboard():
     total_users = User.query.count()
     premium_users = User.query.filter(User.is_premium == True).count()
     total_requests = AIRequest.query.count()
-    requests_last_7d = AIRequest.query.filter(AIRequest.created_at >= datetime.utcnow() - timedelta(days=7)).count()
+    requests_last_7d = AIRequest.query.filter(AIRequest.created_at >= datetime.now(timezone.utc) - timedelta(days=7)).count()
     total_payments = Payment.query.filter_by(status='succeeded').count()
     revenue = db.session.query(func.sum(Payment.amount)).filter_by(status='succeeded').scalar() or 0
     return render_template('admin/dashboard.html',
@@ -320,10 +320,11 @@ def admin_payments():
     payments = query.order_by(Payment.created_at.desc()).paginate(page=page, per_page=20)
     return render_template('admin/payments.html', payments=payments, status=status)
 
-# === INIT DB ===
-@app.before_first_request
-def create_tables():
+# === DATABASE INIT ===
+# Инициализация БД при старте приложения (совместимо с Flask 3.x)
+with app.app_context():
     db.create_all()
 
+# === DEV SERVER ===
 if __name__ == '__main__':
     app.run(debug=True)
