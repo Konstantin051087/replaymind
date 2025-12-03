@@ -11,8 +11,7 @@
         {% if current_user.is_authenticated %}
             {% if current_user.is_admin %}<a href="/admin">Админка</a> |{% endif %}
             <a href="/premium">Премиум</a> | 
-            <a href="#" onclick="document.getElementById('logout').submit()">Выйти</a>
-            <form id="logout" action="/logout" method="POST" style="display:none;"></form>
+            <a href="/logout">Выйти</a>
         {% else %}
             <a href="/login">Войти</a>
         {% endif %}
