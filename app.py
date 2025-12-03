@@ -324,7 +324,3 @@ def admin_payments():
 # Инициализация БД при старте приложения (совместимо с Flask 3.x)
 with app.app_context():
     db.create_all()
-
-# === DEV SERVER ===
-if __name__ == '__main__':
-    app.run(debug=True)
