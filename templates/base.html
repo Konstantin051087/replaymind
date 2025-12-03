@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}ReplayMind{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav style="background:#2d2d3f; padding:10px; margin-bottom:20px;">
+        <a href="/">Главная</a> | 
+        {% if current_user.is_authenticated %}
+            {% if current_user.is_admin %}<a href="/admin">Админка</a> |{% endif %}
+            <a href="/premium">Премиум</a> | 
+            <a href="#" onclick="document.getElementById('logout').submit()">Выйти</a>
+            <form id="logout" action="/logout" method="POST" style="display:none;"></form>
+        {% else %}
+            <a href="/login">Войти</a>
+        {% endif %}
+    </nav>
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert {{ 'error' if category == 'error' else 'success' }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>

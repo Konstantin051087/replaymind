@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>🚀 ReplayMind Premium</h1>
+<p>Всего <strong>300 ₽ в месяц</strong></p>
+<ul>
+    <li>Безлимитные запросы</li>
+    <li>Глубокий анализ</li>
+    <li>Приоритетная поддержка</li>
+</ul>
+<form method="POST" action="/create-payment">
+    <button type="submit">Оплатить через ЮKassa</button>
+</form>
+{% endblock %}

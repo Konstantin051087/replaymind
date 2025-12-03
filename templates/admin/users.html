@@ -1,0 +1,50 @@
+{% extends "admin/base.html" %}
+{% block admin_content %}
+<h2>Пользователи ({{ users.total }})</h2>
+<table border="1" style="width:100%; border-collapse:collapse;">
+    <tr><th>SteamID</th><th>Регистрация</th><th>Премиум</th><th>Блокировка</th><th>Действия</th></tr>
+    {% for user in users.items %}
+    <tr>
+        <td>{{ user.steam_id }}</td>
+        <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+        <td>{% if user.is_premium %}✅{% endif %}</td>
+        <td>
+            {% if user.is_blocked %}
+                {% if user.blocked_until == datetime.max %}
+                    Пожизненно
+                {% else %}
+                    До {{ user.blocked_until.strftime('%Y-%m-%d') }}
+                {% endif %}
+                ({{ user.blocked_reason }})
+            {% else %}
+                —
+            {% endif %}
+        </td>
+        <td>
+            <form method="POST" action="/admin/users/{{ user.id }}/block" style="display:inline;">
+                <input type="hidden" name="action" value="unblock">
+                <button type="submit">Разблокировать</button>
+            </form>
+            <form method="POST" action="/admin/users/{{ user.id }}/block" style="display:inline;">
+                <input type="hidden" name="action" value="temp">
+                <input type="number" name="days" value="7" min="1" max="365" style="width:60px;">
+                <input type="text" name="reason" placeholder="Причина" style="width:100px;">
+                <button type="submit">Временно</button>
+            </form>
+            <form method="POST" action="/admin/users/{{ user.id }}/block" style="display:inline;">
+                <input type="hidden" name="action" value="perm">
+                <input type="text" name="reason" placeholder="Причина">
+                <button type="submit">Навсегда</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% if users.has_prev or users.has_next %}
+    <div>
+        {% if users.has_prev %}<a href="?page={{ users.prev_num }}">← Назад</a>{% endif %}
+        Страница {{ users.page }} из {{ users.pages }}
+        {% if users.has_next %}<a href="?page={{ users.next_num }}">Вперёд →</a>{% endif %}
+    </div>
+{% endif %}
+{% endblock %}

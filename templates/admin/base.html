@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>Админ-панель</h1>
+<nav>
+    <a href="/admin">Дашборд</a> | 
+    <a href="/admin/users">Пользователи</a> | 
+    <a href="/admin/payments">Платежи</a>
+</nav>
+<hr>
+{% block admin_content %}{% endblock %}
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+<h1>🔍 ReplayMind — ИИ для геймеров</h1>
+{% if not is_premium %}
+    <p>Осталось запросов: <strong>{{ quota }}</strong> из 5</p>
+    {% if quota <= 0 %}
+        <p style="color:red;">Лимит исчерпан. <a href="/premium">Подключите подписку</a>.</p>
+    {% endif %}
+{% else %}
+    <p style="color:green;">✅ Премиум-доступ активен</p>
+{% endif %}
+
+<form id="analyzeForm">
+    <label>Игра:</label>
+    <select name="game" required>
+        <option value="CS2">Counter-Strike 2</option>
+        <option value="Elden Ring">Elden Ring</option>
+        <option value="Valorant">Valorant</option>
+        <option value="Dota 2">Dota 2</option>
+    </select>
+    <label>Ситуация:</label>
+    <textarea name="description" placeholder="Опишите, где вы проигрываете..." required></textarea>
+    <button type="submit">Анализировать</button>
+</form>
+
+<div id="result" style="display:none; margin-top:20px;">
+    <h3>Результат:</h3>
+    <p><strong>Ошибка:</strong> <span id="mistake"></span></p>
+    <p><strong>Совет:</strong> <span id="advice"></span></p>
+</div>
+
+<script>
+document.getElementById('analyzeForm').onsubmit = async (e) => {
+    e.preventDefault();
+    const data = {game: e.target.game.value, description: e.target.description.value};
+    const res = await fetch('/analyze', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)});
+    const json = await res.json();
+    if (res.ok) {
+        document.getElementById('mistake').textContent = json.mistake;
+        document.getElementById('advice').textContent = json.advice;
+        document.getElementById('result').style.display = 'block';
+    } else {
+        alert(json.error || 'Ошибка');
+    }
+};
+</script>
+{% endblock %}

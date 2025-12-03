@@ -1,0 +1,12 @@
+{% extends "admin/base.html" %}
+{% block admin_content %}
+<h2>Дашборд</h2>
+<ul>
+    <li>Всего пользователей: {{ total_users }}</li>
+    <li>Премиум: {{ premium_users }}</li>
+    <li>Всего запросов: {{ total_requests }}</li>
+    <li>Запросов за 7 дней: {{ requests_last_7d }}</li>
+    <li>Платежей: {{ total_payments }}</li>
+    <li>Доход: {{ revenue }} ₽</li>
+</ul>
+{% endblock %}

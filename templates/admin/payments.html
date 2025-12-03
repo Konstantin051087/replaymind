@@ -1,0 +1,26 @@
+{% extends "admin/base.html" %}
+{% block admin_content %}
+<h2>Платежи</h2>
+<form method="GET">
+    <select name="status">
+        <option value="all" {% if status == 'all' %}selected{% endif %}>Все</option>
+        <option value="pending" {% if status == 'pending' %}selected{% endif %}>Ожидают</option>
+        <option value="succeeded" {% if status == 'succeeded' %}selected{% endif %}>Успешные</option>
+        <option value="canceled" {% if status == 'canceled' %}selected{% endif %}>Отменены</option>
+    </select>
+    <button type="submit">Фильтр</button>
+</form>
+
+<table border="1" style="width:100%; border-collapse:collapse; margin-top:10px;">
+    <tr><th>ID</th><th>SteamID</th><th>Сумма</th><th>Статус</th><th>Дата</th></tr>
+    {% for p in payments.items %}
+    <tr>
+        <td>{{ p.yookassa_payment_id }}</td>
+        <td>{{ p.user.steam_id }}</td>
+        <td>{{ p.amount }} {{ p.currency }}</td>
+        <td>{{ p.status }}</td>
+        <td>{{ p.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}
